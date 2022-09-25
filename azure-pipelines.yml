@@ -10,8 +10,42 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  buildConfiguration: 'Release'
+- name: buildConfiguration
+  value: 'Release'
+- name: BuildParameters.RestoreBuildProjects
+  value: '**/*.csproj'
+name: $(date:yyyyMMdd)$(rev:.r)
+jobs:
+- job: Job_1
+  displayName: Agent job 1
+  pool:
+    vmImage: windows-latest
+  steps:
+  - checkout: self
+    clean: true
+    fetchTags: false
+  - task: DotNetCoreCLI@2
+    displayName: dotnet restore
+    inputs:
+      command: restore
+      projects: $(BuildParameters.RestoreBuildProjects)
+  - task: DotNetCoreCLI@2
+    displayName: dotnnet build
+    inputs:
+      projects: $(BuildParameters.RestoreBuildProjects)
+      arguments: --configuration $(BuildConfiguration)
+  - task: DotNetCoreCLI@2
+    displayName: dotnet pack
+    inputs:
+      command: pack
+      projects: $(BuildParameters.RestoreBuildProjects)
+      arguments: --configuration $(BuildConfiguration)
+      versioningScheme: byPrereleaseNumber
+  - task: DotNetCoreCLI@2
+    displayName: dontet nuget push
+    inputs:
+      command: push
+      projects: $(BuildParameters.RestoreBuildProjects)
+      arguments: --configuration $(BuildConfiguration)
+      feedPublish: 1ee9fd41-9b6d-4e71-b853-23c1fe69277a/12507d73-f10b-426a-a558-92e320241f10
 
-steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
